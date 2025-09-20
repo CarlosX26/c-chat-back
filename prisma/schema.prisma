@@ -1,0 +1,53 @@
+// // This is your Prisma schema file,
+// // learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String         @id @default(auto()) @map("_id") @db.ObjectId
+  username       String         @unique
+  password       String        
+  avatar         String?
+  createdAt      DateTime       @default(now())
+  conversations  UserConversation[] // Relação M:N entre usuários e conversas
+}
+
+model Conversation {
+  id             String          @id @default(auto()) @map("_id") @db.ObjectId
+  isGroup        Boolean         @default(false) // Define se é uma conversa de grupo ou privada
+  name           String?         // Nome da conversa (usado para grupos)
+  createdAt      DateTime        @default(now())
+  users          UserConversation[] // Relação com a tabela pivô
+  messages       Message[]
+}
+
+model UserConversation {
+  id             String          @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String          @db.ObjectId
+  conversationId String          @db.ObjectId
+  user           User            @relation(fields: [userId], references: [id])
+  conversation   Conversation    @relation(fields: [conversationId], references: [id])
+
+  @@index([userId])
+  @@index([conversationId])
+}
+
+model Message {
+  id             String          @id @default(auto()) @map("_id") @db.ObjectId
+  content        String
+  senderId       String          @db.ObjectId
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  conversationId String          @db.ObjectId
+  conversation   Conversation    @relation(fields: [conversationId], references: [id])
+
+  @@index([conversationId])
+  @@index([senderId])
+}
